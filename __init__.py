@@ -2,20 +2,35 @@
 #
 # Copyright 2016 N-Dream AG Inc.
 # Based on https://github.com/diafygi/acme-tiny
-import os
 
 """
-INSTALLATION:
+# LetsEncrypt for Google AppEngine Python
+If you want to have a free SSL certificate from LetsEncrypt for you custom domain, the setup and renewal can be a hassle.
+This little script makes the process super easy.
 
-Add the following to your app.yaml:
+### Note about security
+You should probably quickly read through the python script to convince yourself that it's secure.
 
+## Installation
+In your Python AppEngine Project execute the following command:
+```
+git submodule add https://github.com/AirConsole/letsencrypt
+```
+
+Then add the following to your `app.yaml`:
+```
 handlers:
 - url: /\.well\-known\/acme\-challenge\/.*
   script: letsencrypt.app
+```
+Upload your app to Google AppEngine.
 
-To get a new appengine https certificate for your domain go to:
-www.yourdomain.com/.well-known/acme-challenge/
+## Create or renew a SSL certificate
+- Go to `http://www.yourdomain.com/.well-known/acme-challenge/` and login as an administrator
+- Execute the displayed command in a shell that supports curl and openssl ([Google Cloud Shell](https://cloud.google.com/shell/docs/quickstart) can be used)
+- Upload the obtained certificates on https://console.cloud.google.com/appengine/settings/certificates
 """
+import os
 
 if 'SERVER_SOFTWARE' in os.environ:
   import webapp2
