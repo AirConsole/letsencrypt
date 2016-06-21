@@ -46,7 +46,7 @@ if 'SERVER_SOFTWARE' in os.environ:
         if domain.endswith(".appspot.com"):
           self.response.out.write("You need to run this script on your domain, not appspot.com.")
           return
-        if os.environ.get('SERVER_SOFTWARE','').startswith('Development') and False:
+        if os.environ.get('SERVER_SOFTWARE','').startswith('Development'):
           self.response.out.write("This script can only be run in production.")
           return
         self.response.out.write("""
