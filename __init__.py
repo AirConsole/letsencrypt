@@ -91,7 +91,7 @@ else:
   import argparse, subprocess, json, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
   from urllib2 import urlopen, Request
   import urllib
-  from hashlib
+  import hashlib
 
   #DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
   DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
