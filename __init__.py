@@ -2,42 +2,27 @@
 #
 # Copyright 2016 N-Dream AG Inc.
 # Based on https://github.com/diafygi/acme-tiny
+import os
 
 """
-# LetsEncrypt for Google AppEngine Python
-If you want to have a free SSL certificate from LetsEncrypt for you custom domain, the setup and renewal can be a hassle.
-This little script makes the process super easy.
+INSTALLATION:
 
-### Note about security
-You should probably quickly read through the python script to convince yourself that it's secure.
+Add the following to your app.yaml:
 
-## Installation
-In your Python AppEngine Project execute the following command:
-```
-git submodule add https://github.com/AirConsole/letsencrypt
-```
-
-Then add the following to your `app.yaml`:
-```
 handlers:
 - url: /\.well\-known\/acme\-challenge\/.*
   script: letsencrypt.app
-```
-Upload your app to Google AppEngine.
 
-## Create or renew a SSL certificate
-- Go to `http://www.yourdomain.com/.well-known/acme-challenge/` and login as an administrator
-- Execute the displayed command in a shell that supports curl and openssl ([Google Cloud Shell](https://cloud.google.com/shell/docs/quickstart) can be used)
-- Upload the obtained certificates on https://console.cloud.google.com/appengine/settings/certificates
+To get a new appengine https certificate for your domain go to:
+www.yourdomain.com/.well-known/acme-challenge/
 """
-import os
 
 if 'SERVER_SOFTWARE' in os.environ:
   import webapp2
   from google.appengine.api import users
   from google.appengine.api import memcache
   import random
-  from md5 import md5
+  import hashlib
   import logging
 
   class AcmeChallengeCreatorHandler(webapp2.RequestHandler):
@@ -55,7 +40,7 @@ if 'SERVER_SOFTWARE' in os.environ:
         if not secret:
           secret = ''.join(random.SystemRandom().choice(
               "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-                           for _ in xrange(32))
+                           for _ in xrange(64))
           memcache.set("letsencrypt.py_secret", secret)
         domain = self.request.host
         if domain.endswith(".appspot.com"):
@@ -77,7 +62,7 @@ if 'SERVER_SOFTWARE' in os.environ:
       value = self.request.get("value")
       signature = self.request.get("signature")
       secret = memcache.get("letsencrypt.py_secret")
-      if key and value and md5(key + value + secret).hexdigest() == signature:
+      if key and value and hashlib.sha512(key + value + secret).hexdigest() == signature:
         logging.info("Setting challenge for " + key + " to " + value)
         memcache.set("letsencrypt.py_challenge_" + key, value)
       else:
@@ -106,7 +91,7 @@ else:
   import argparse, subprocess, json, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
   from urllib2 import urlopen, Request
   import urllib
-  from md5 import md5
+  from hashlib
 
   #DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
   DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
@@ -248,7 +233,7 @@ else:
         data = urllib.urlencode({
           "key": token,
           "value": keyauthorization,
-          "signature": md5(token + keyauthorization + secret).hexdigest()
+          "signature": hashlib.sha512(token + keyauthorization + secret).hexdigest()
         })
         try:
           req = Request(url, data)
