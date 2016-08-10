@@ -50,7 +50,8 @@ if 'SERVER_SOFTWARE' in os.environ:
           self.response.out.write("This script can only be run in production.")
           return
         self.response.out.write("""
-  Run the following command in a shell (curl and openssl required):
+  Adapt and run the following command in a shell (curl and openssl required).
+  You can add several domains after the --domain option by using a coma separated list:
   <pre style='background-color: #eee; padding: 10px'>curl -s http://%s/.well-known/acme-challenge/?script=1 | python - --domain %s --secret %s</pre>
   You can also run this command in the <a href='https://cloud.google.com/shell/docs/quickstart'>Google Cloud Shell</a>
   """ % (domain, domain, secret))
