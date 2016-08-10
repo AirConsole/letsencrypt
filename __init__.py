@@ -92,6 +92,7 @@ else:
   from urllib2 import urlopen, Request
   import urllib
   import hashlib
+  import tempfile
 
   #DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
   DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
@@ -101,7 +102,8 @@ else:
   LOGGER.addHandler(logging.StreamHandler())
   LOGGER.setLevel(logging.INFO)
 
-  def get_crt(domain, secret, log=LOGGER, CA=DEFAULT_CA):
+  def get_crt(domainlist, secret, log=LOGGER, CA=DEFAULT_CA):
+    domains = domainlist.split(',')
     try:
       ts = str(time.time())
       account_key = "account.key" + ts
@@ -129,8 +131,28 @@ else:
         domain_key_file.write(domain_key_contents)
 
       log.info("Generate csr...")
-      proc = subprocess.Popen(["openssl", "req", "-new", "-sha256", "-key", domain_key, "-subj", "/CN=" + domain],
-                              stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      if len(domains) > 1:
+        domain_config_file = tempfile.NamedTemporaryFile()
+        default_conf = open("/etc/ssl/openssl.cnf").readlines()
+        default_conf.append("[SAN]\n")
+        default_conf.append("subjectAltName=DNS:%s\n" % ',DNS:'.join(domains))
+        domain_config_file.writelines(default_conf)
+        domain_config_file.flush()
+
+#for multiple domains (use this one if you want both www.yoursite.com and yoursite.com)
+#openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat
+#/etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=DNS:yoursite.com,DNS:www.yoursite.com")) > domain.csr
+
+        proc = subprocess.Popen(["openssl", "req", "-new", "-sha256", "-key",
+                                domain_key, "-subj", "/", "-reqexts", "SAN",
+                                "-config", domain_config_file.name],
+                                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+      else:
+        proc = subprocess.Popen(["openssl", "req", "-new", "-sha256", "-key",
+                                domain_key, "-subj", "/CN=" + domain],
+                                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
       csr_contents, err = proc.communicate()
       if proc.returncode != 0:
         raise IOError("OpenSSL Error: {0}".format(err))
@@ -202,7 +224,7 @@ else:
       log.info("Registering account...")
       code, result = _send_signed_request(CA + "/acme/new-reg", {
         "resource": "new-reg",
-        "agreement": "https://letsencrypt.org/documents/LE-SA-v1.0.1-July-27-2015.pdf",
+        "agreement": "https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf",
       })
       if code == 201:
         log.info("Registered!")
@@ -320,7 +342,7 @@ else:
         description=textwrap.dedent("Semi-Automates 'Let's Encrypt' for Google AppEngine\n"+
                                     "This script is based on https://github.com/diafygi/acme-tiny.")
     )
-    parser.add_argument("--domain", required=True, help="the domain which you would like to get the certicate for")
+    parser.add_argument("--domain", required=True, help="the domains which you would like to get the certicate for (coma separated list)")
     parser.add_argument("--secret", required=True, help="The secret you got from the /.well-known/acme-challenge/ page on your domain")
     parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
