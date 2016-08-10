@@ -150,7 +150,7 @@ else:
                                 stderr=subprocess.PIPE)
       else:
         proc = subprocess.Popen(["openssl", "req", "-new", "-sha256", "-key",
-                                domain_key, "-subj", "/CN=" + domain],
+                                domain_key, "-subj", "/CN=" + domains[0]],
                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
       csr_contents, err = proc.communicate()
